@@ -60,7 +60,7 @@ function showEnv(): void
  * Creates a new Symfony project.
  *
  * This task initializes a new Symfony project in the current directory by using the Symfony skeleton.
- * It optionally sets up Git, Docker, and configures a basic web application structure.
+ * It optionally sets up Git, Docker, and configures a webapp or API basic structure.
  */
 #[AsTask(description: 'Create new Symfony project', aliases: ['project:init'], namespace: 'project')]
 function symfonyInit(): void
@@ -69,7 +69,7 @@ function symfonyInit(): void
 
     if (!fs()->exists('composer.json')) {
         io()->section('Creating a new Symfony project in the current directory');
-        $sf_version = io()->ask('What version of Symfony do you want to use? (default: latest)', '');
+        $sf_version = io()->ask('What version of Symfony do you want to use? (default: latest)');
         $stability = io()->ask('What stability do you want to use?', 'stable');
         run('composer create-project "symfony/skeleton ' . $sf_version . '" tmp --stability="' . $stability . '" --prefer-dist --no-progress --no-interaction --no-install');
 
@@ -112,10 +112,9 @@ function symfonyInit(): void
         }
     }
 
-    if (!fs()->exists('templates')) {
-        io()->section('Configuring project as a web application');
-        $webapp = io()->confirm('Do you want to create a web application?', false);
-        if ($webapp) {
+    $app_type = io()->choice('Do you want to create a web application or a microservice (like an API)?', ['webapp', 'api']);
+    switch (true) {
+        case $app_type === 'webapp':
             if (!fs()->exists('compose.yml') || !fs()->exists('.docker')) {
                 $docker = io()->confirm('Do you want to use Docker?', false);
                 if ($docker) {
@@ -124,7 +123,17 @@ function symfonyInit(): void
                 }
             }
             run('composer require webapp --no-progress --no-interaction');
-        }
+
+        case $app_type === 'api':
+            if (!fs()->exists('compose.yml') || !fs()->exists('.docker')) {
+                $docker = io()->confirm('Do you want to use Docker?', false);
+                if ($docker) {
+                    io()->section('Creating Docker configuration');
+                    run('composer config --json extra.symfony.docker true');
+                }
+            }
+            run('composer require symfony/serializer symfony/http-foundation doctrine orm symfony/maker-bundle --no-progress --no-interaction');
+            run('composer require --dev symfony/web-profiler-bundle --no-progress --no-interaction');
     }
 
     if (!fs()->exists('README.md')) {
@@ -413,7 +422,7 @@ function makeForm(): void
 function createDatabase(): void
 {
     io()->title('Creating new Database');
-    run('symfony console doctrine:database:create --if-not-exists');
+    run('symfony console doctrine:database:create');
 }
 
 /**
@@ -425,7 +434,7 @@ function createDatabase(): void
 function dropDatabase(): void
 {
     io()->title('Dropping Database');
-    run('symfony console doctrine:database:drop --force --if-exists');
+    run('symfony console doctrine:database:drop --force');
 }
 
 /**
@@ -462,7 +471,7 @@ function runMigrations(): void
 function initializeDatabase(): void
 {
     io()->title('Initializing Database');
-    run('symfony console doctrine:database:create --if-not-exists');
+    run('symfony console doctrine:database:create');
     run('symfony console make:migration');
     run('symfony console doctrine:migrations:migrate');
     $fixtures = io()->ask('Would you like to load fixtures?', 'y');

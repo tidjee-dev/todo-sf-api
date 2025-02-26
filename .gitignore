@@ -3,3 +3,17 @@
 
 # Ignore the .env.docker file
 .env.docker
+
+# Ignore the composer.lock file
+composer.lock
+
+###> symfony/framework-bundle ###
+/.env.local
+/.env.local.php
+/.env.*.local
+/config/secrets/prod/prod.decrypt.private.php
+/public/bundles/
+/var/
+/vendor/
+###< symfony/framework-bundle ###
++
